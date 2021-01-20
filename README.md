@@ -1,4 +1,4 @@
-# NetApp Cloud Service Demo-Infrastrutcture in Azure
+# NetApp Cloud Services Demo-Infrastrutcture in Azure
 
 This little script creates NetApp Cloud Services in Azure. It will deploy Azure NetApp Files, Cloud Volumes ONTAP and Global File Cache.
 
