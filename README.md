@@ -4,7 +4,7 @@ This little script creates NetApp Cloud Services in Azure. It will deploy Azure 
 
 I used the Hub & Spoke Network Deployment for Azure NetApp Files.
 
-## What will deploy?
+## What is created?
         West Europe (Hub Network)
                 - Windows Domain Controller with ADDS
                 - VNet with three Subnets (Bastian, Domain, ANF)
