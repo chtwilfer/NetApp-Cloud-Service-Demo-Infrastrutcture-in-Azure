@@ -4,6 +4,34 @@ This little script creates NetApp Cloud Services in Azure. It will deploy Azure 
 
 I used the Hub & Spoke Network Deployment for Azure NetApp Files.
 
+## What will deployed
+        West Europe (Hub Network)
+                - Windows Domain Controller with ADDS
+                - VNet with three Subnets (Bastian, Domain, ANF)
+                - 1 ANF Account
+                - 1 ANF Pool
+                - 1 NFS volume
+                - Snapshot from NFS volume as a Backup
+        
+        North Europe (First Spoke Network)
+                - VNet with one Subnets (ANF)
+                - 1 ANF Account
+                - 1 ANF Pool
+                - 1 NFS volume
+        
+        VNet Peering between Hub & Spoke Network and the third & fourth Vnet (ontop)
+        
+        West Europe ONTAP (ontop)
+                - VNet
+                - Vnet Peering with Hub Network
+        
+        West Europe GFC (ontop)
+                - VNet
+                - Vnet Peering with Hub Network
+
+
+## Feature Registration and enablement ANF for the subscription
+
 
 
 ## Example
@@ -24,7 +52,7 @@ You can start the script with Powershell and Admin rights.
         During the Script there will be open some webpages for the rest of deploying the whole Demo-Infrastructure.
         
 ## Cleanup Ressources
-At the end of the script there ist a disabled clenup section. You can enable it or copy, paste and run in Powershell:
+At the end of the script there ist a disabled cleanup section. You can enable it or copy, paste and run in Powershell this:
 
 Get-AzResourceGroup -Name *Demo-ANF* | Remove-AzResourceGroup -Force
 
