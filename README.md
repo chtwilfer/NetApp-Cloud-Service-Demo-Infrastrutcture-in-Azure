@@ -45,16 +45,16 @@ For using enable it.
 You can start the script with Powershell and Admin rights.
 
         For the ground deployment ANF with two regions and volumes (Hub & Spoke) use:
-        .\ANFDemo.ps1 -CustomerName "ANF-Demo" e.g. -> ANF-Demo
+        .\NCSDemoInfra.ps1 -CustomerName "ANF-Demo" e.g. -> ANF-Demo
 
         Use this, if you want to deploy ONTAP in Azure ontop to Hub & Spoke use:
-        .\ANFDemo.ps1 -CustomerName "ANF-Demo" -deployONTAP
+        .\NCSDemoInfra.ps1 -CustomerName "ANF-Demo" -deployONTAP
 
         Use this, if you want to deploy Global File Cache ontop to Hub & Spoke in Azure use:
-        .\ANFDemo.ps1 -CustomerName "ANF-Demo" -deployGFC
+        .\NCSDemoInfra.ps1 -CustomerName "ANF-Demo" -deployGFC
         
         Use this, if you want to deploy Global File Cache ontop to Hub & Spoke and ONATP and GFC in Azure use:
-        .\ANFDemo.ps1 -CustomerName "ANF-Demo" -deployONTAP -deployGFC        
+        .\NCSDemoInfra.ps1 -CustomerName "ANF-Demo" -deployONTAP -deployGFC        
 
         During the Script there will be open some webpages for the rest of deploying the whole Demo-Infrastructure.
         
