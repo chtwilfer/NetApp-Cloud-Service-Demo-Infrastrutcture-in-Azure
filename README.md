@@ -31,10 +31,13 @@ I used the Hub & Spoke Network Deployment for Azure NetApp Files.
 
 
 ## Feature Registration and enablement ANF for the subscription
+Make sure that your subscription is ready fro ANF (https://docs.microsoft.com/en-us/azure/azure-netapp-files/azure-netapp-files-register)
 
+There are some Azure NetApp Provider Features, that have to enabled at the first time you use it.
+There is a disabled section in the script after connecting to Azure and getting your subscription.
+For using enable it.
 
-
-## Example
+## Example for using the script
 You can start the script with Powershell and Admin rights.
 
         For the ground deployment ANF with two regions and volumes (Hub & Spoke) use:
