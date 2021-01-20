@@ -4,7 +4,7 @@ This little script creates NetApp Cloud Services in Azure. It will deploy Azure 
 
 I used the Hub & Spoke Network Deployment for Azure NetApp Files.
 
-## What will deployed
+## What will deploy?
         West Europe (Hub Network)
                 - Windows Domain Controller with ADDS
                 - VNet with three Subnets (Bastian, Domain, ANF)
@@ -29,9 +29,13 @@ I used the Hub & Spoke Network Deployment for Azure NetApp Files.
                 - VNet
                 - Vnet Peering with Hub Network
 
+For configuring ONTAP and GFC you can use the NetApp Cloud Manager. 
+Requirements:
+- Connector for NetApp Cloud Manager to Microsoft Azure - https://docs.netapp.com/us-en/occm/task_creating_connectors_azure.html#setting-up-azure-permissions-to-create-a-connector
+- NetApp Login to lauch Cloud Manager
 
 ## Feature Registration and enablement ANF for the subscription
-Make sure that your subscription is ready fro ANF (https://docs.microsoft.com/en-us/azure/azure-netapp-files/azure-netapp-files-register)
+Make sure that your subscription is ready fro ANF - https://docs.microsoft.com/en-us/azure/azure-netapp-files/azure-netapp-files-register
 
 There are some Azure NetApp Provider Features, that have to enabled at the first time you use it.
 There is a disabled section in the script after connecting to Azure and getting your subscription.
