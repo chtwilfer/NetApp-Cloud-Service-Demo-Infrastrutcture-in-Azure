@@ -1,0 +1,13 @@
+subscription_id = "00000000-0000-0000-0000-000000000000"
+customer_name   = "ANF-Demo"
+
+hub_location    = "westeurope"
+spoke_location  = "northeurope"
+
+deploy_ontap_network = false
+deploy_gfc_network   = false
+
+vm_admin_username = "demoadmin"
+
+# Provide vm_admin_password and dsrm_password through secure TF_VAR_* environment variables.
+# Do not put credentials in this file or commit a populated terraform.tfvars file.

@@ -1,0 +1,5 @@
+resource_group_name  = "<existing-state-resource-group>"
+storage_account_name = "<existing-storage-account>"
+container_name       = "tfstate"
+key                  = "netapp-demo.tfstate"
+use_azuread_auth     = true

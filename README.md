@@ -76,6 +76,9 @@ Deploy the base Hub-and-Spoke setup:
 Append `-deployONTAP` and/or `-deployGFC` to prepare those networks for a separate NetApp Cloud Manager deployment. These switches do not deploy CVO or GFC. Use `-OpenGuidance` to open the relevant documentation after a successful run.
 
 The new script requires the Az.Accounts, Az.Resources, Az.Network, Az.Compute and Az.NetAppFiles modules, plus Azure permissions for the requested resources. It creates new resource groups only and stops if any target resource group already exists. Confirm Azure NetApp Files region availability, quota, provider features and pricing before deployment. Windows local administrator rights are not inherently required; Azure RBAC permissions are.
+
+## Terraform conversion
+The Terraform conversion is in the [`infra/`](infra/README.md) folder. It includes the root configuration, Azure networking and peering, Bastion, Windows domain controller/AD DS extension, Azure NetApp Files volumes and the optional CVO/GFC network preparation. Follow that folder's instructions to configure remote state, validate and review a plan. The configuration does not run `terraform apply` automatically.
         
 ## Cleanup Ressources
 Neither script deletes resources automatically. Do not use wildcard deletion for demo cleanup. First inspect each exact resource group name, then preview deletion individually with `Remove-AzResourceGroup -Name '<exact-resource-group-name>' -WhatIf`. Remove resources only after confirming the subscription, resource group contents and expected deletion.

@@ -1,0 +1,29 @@
+$dsrmText = [System.Text.Encoding]::UTF8.GetString([System.Convert]::FromBase64String('${dsrm_password_base64}'))
+$dsrmPassword = ConvertTo-SecureString -String $dsrmText -AsPlainText -Force
+$dsrmText = $null
+
+$logDirectory = 'C:\logs'
+New-Item -ItemType Directory -Path $logDirectory -Force | Out-Null
+Start-Transcript -Path (Join-Path $logDirectory 'ADDS.log')
+try {
+    Install-WindowsFeature -Name AD-Domain-Services -IncludeManagementTools
+
+    Import-Module ActiveDirectory
+    $forestParameters = @{
+        CreateDnsDelegation            = $false
+        DomainName                     = '${domain_name}'
+        NoRebootOnCompletion           = $true
+        SafeModeAdministratorPassword  = $dsrmPassword
+        Force                          = $true
+    }
+    Install-ADDSForest @forestParameters
+
+    Set-ItemProperty -Path 'HKLM:\System\CurrentControlSet\Control\Terminal Server' -Name 'fDenyTSConnections' -Value 0
+    Enable-NetFirewallRule -DisplayGroup 'Remote Desktop'
+}
+finally {
+    Stop-Transcript
+}
+
+Start-Sleep -Seconds 60
+Restart-Computer -ComputerName . -Force
