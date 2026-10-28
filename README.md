@@ -57,13 +57,30 @@ You can start the script with Powershell and Admin rights.
         .\NCSDemoInfra.ps1 -CustomerName "ANF-Demo" -deployONTAP -deployGFC        
 
         During the Script there will be open some webpages for the rest of deploying the whole Demo-Infrastructure.
+
+## Improved script
+`NCSDemoInfra-v2.ps1` is the safer replacement path; the original `NCSDemoInfra.ps1` remains unchanged. It requires the Azure Subscription ID and does not install modules or change the execution policy.
+
+Preview the planned resources without signing in or changing Azure:
+
+```powershell
+.\NCSDemoInfra-v2.ps1 -CustomerName "ANF-Demo" -SubscriptionId "00000000-0000-0000-0000-000000000000" -WhatIf
+```
+
+Deploy the base Hub-and-Spoke setup:
+
+```powershell
+.\NCSDemoInfra-v2.ps1 -CustomerName "ANF-Demo" -SubscriptionId "<subscription-guid>"
+```
+
+Append `-deployONTAP` and/or `-deployGFC` to prepare those networks for a separate NetApp Cloud Manager deployment. These switches do not deploy CVO or GFC. Use `-OpenGuidance` to open the relevant documentation after a successful run.
+
+The new script requires the Az.Accounts, Az.Resources, Az.Network, Az.Compute and Az.NetAppFiles modules, plus Azure permissions for the requested resources. It creates new resource groups only and stops if any target resource group already exists. Confirm Azure NetApp Files region availability, quota, provider features and pricing before deployment. Windows local administrator rights are not inherently required; Azure RBAC permissions are.
         
 ## Cleanup Ressources
-At the end of the script there ist a disabled cleanup section. You can enable it or copy, paste and run in Powershell this:
-
-Get-AzResourceGroup -Name *Demo-ANF* | Remove-AzResourceGroup -Force
+Neither script deletes resources automatically. Do not use wildcard deletion for demo cleanup. First inspect each exact resource group name, then preview deletion individually with `Remove-AzResourceGroup -Name '<exact-resource-group-name>' -WhatIf`. Remove resources only after confirming the subscription, resource group contents and expected deletion.
 
 
 ## Open things and toDo´s
 - In the ANF spoke Network I want to deploy a LinuxVM including to integrate the nfs share
-- I want to use a whole script-logging wit ouput at the end of the script
+- Validate the new deployment script against a non-production Azure subscription and confirm current ANF quotas and regional availability
