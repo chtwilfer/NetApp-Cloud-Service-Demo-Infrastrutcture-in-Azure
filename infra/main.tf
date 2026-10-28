@@ -26,4 +26,13 @@ locals {
     "-EncodedCommand",
     textencodebase64(local.domain_controller_script, "UTF-16LE")
   ])
+
+  linux_bootstrap_script = replace(templatefile("${path.module}/scripts/configure-ubuntu-desktop.sh.tftpl", {
+    linux_username   = var.linux_vm_admin_username
+    anf_mount_target = azurerm_netapp_volume.this["north_europe"].ip_address
+    anf_volume_path  = local.anf_regions.north_europe.volume_path
+    mount_path       = "/mnt/anf-demo"
+  }), "\r\n", "\n")
+
+  linux_bootstrap_command = "echo ${base64encode(local.linux_bootstrap_script)} | base64 --decode | bash"
 }

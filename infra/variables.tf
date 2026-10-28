@@ -64,6 +64,34 @@ variable "vm_admin_password" {
   }
 }
 
+variable "linux_vm_size" {
+  description = "Azure VM size for the Ubuntu desktop/NFS client in North Europe."
+  type        = string
+  default     = "Standard_D2s_v5"
+}
+
+variable "linux_vm_admin_username" {
+  description = "Linux user used for SSH and the XFCE/xrdp desktop session."
+  type        = string
+  default     = "demouser"
+
+  validation {
+    condition     = can(regex("^[a-z_][a-z0-9_-]{0,30}$", var.linux_vm_admin_username))
+    error_message = "linux_vm_admin_username must be a valid lowercase Linux username."
+  }
+}
+
+variable "linux_vm_admin_password" {
+  description = "Linux password for SSH and xrdp. Supply through TF_VAR_linux_vm_admin_password or a secret manager, not a committed tfvars file."
+  type        = string
+  sensitive   = true
+
+  validation {
+    condition     = length(var.linux_vm_admin_password) >= 12
+    error_message = "linux_vm_admin_password must be at least 12 characters."
+  }
+}
+
 variable "dsrm_password" {
   description = "Separate Directory Services Restore Mode password. Supply through TF_VAR_dsrm_password or a secret manager. Terraform state can contain extension settings; protect the state backend."
   type        = string

@@ -9,6 +9,7 @@ locals {
       volume_name       = "anf-${local.customer_token}-nfs-we"
       volume_path       = "myfilepath1"
       subnet_key        = "hub.anf"
+      allowed_clients   = null
       create_snapshot   = true
     }
     north_europe = {
@@ -20,6 +21,7 @@ locals {
       volume_name       = "anf-${local.customer_token}-nfs-ne"
       volume_path       = "myfilepath2"
       subnet_key        = "spoke.anf"
+      allowed_clients   = ["10.3.1.0/24"]
       create_snapshot   = false
     }
   }
@@ -60,6 +62,18 @@ resource "azurerm_netapp_volume" "this" {
   storage_quota_in_gb = 100
   protocols           = ["NFSv3"]
   tags                = local.common_tags
+
+  dynamic "export_policy_rule" {
+    for_each = each.value.allowed_clients == null ? [] : [each.value.allowed_clients]
+
+    content {
+      rule_index          = 1
+      allowed_clients     = export_policy_rule.value
+      protocol            = "NFSv3"
+      unix_read_write     = true
+      root_access_enabled = false
+    }
+  }
 }
 
 resource "azurerm_netapp_snapshot" "west_europe" {

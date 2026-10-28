@@ -1,11 +1,13 @@
 # Azure NetApp Files Demo Infrastructure (Terraform)
 
-This folder converts the deployment flow from `NCSDemoInfra-v2.ps1` to Terraform. It creates:
+This folder converts the deployment flow from `NCSDemoInfra-v3.ps1` to Terraform. It creates:
 
 - A West Europe hub VNet with Bastion, domain-services and delegated ANF subnets.
-- An Azure Bastion host and a Windows Server 2019 domain controller VM. A VM extension installs an AD DS forest named `anfdemo.intra`.
+- An Azure Bastion Standard host with tunneling enabled and a Windows Server 2025 domain controller VM. A VM extension installs a new AD DS forest named `anfdemo.intra`; it does not migrate an existing Server 2019 domain controller.
+- A North Europe `LinuxClientSubnet` (`10.3.1.0/24`) and private Ubuntu Server 24.04 VM with XFCE/xrdp, reachable through the Bastion tunnel.
 - Azure NetApp Files accounts and 4 TiB Standard pools in West Europe and North Europe, each with a 100 GiB NFSv3 volume.
 - A `Snapshot-Backup` snapshot for the West Europe volume.
+- A North Europe NFSv3 export rule granting Unix read/write to `10.3.1.0/24`, with root access disabled. The Ubuntu VM automatically mounts the volume at `/mnt/anf-demo`, including after reboot.
 - Optional VNets and bidirectional peerings to prepare for separate Cloud Volumes ONTAP and/or Global File Cache deployments.
 
 The optional networks do not deploy Cloud Volumes ONTAP or Global File Cache. Those products must be provisioned separately through NetApp Cloud Manager.
@@ -16,9 +18,9 @@ Terraform manages the resources declared in this folder. It does not import reso
 
 - Terraform 1.7 or later. On Windows, install it with `winget install Hashicorp.Terraform` if needed.
 - Azure CLI for interactive authentication, or an approved workload identity/service-principal setup for automation.
-- An Azure subscription with permissions to create resource groups, VNets, peering, Bastion, a Windows VM, and Azure NetApp Files resources.
+- An Azure subscription with permissions to create resource groups, VNets, peering, Bastion Standard, Windows and Linux VMs, VM extensions, NSGs, and Azure NetApp Files resources.
 - Azure NetApp Files available in both target regions (`westeurope` and `northeurope`), with sufficient quota/capacity and any required provider features registered.
-- A supported Windows VM size in West Europe. The default is `Standard_D2_v3`; verify availability and quota in your subscription before planning.
+- Supported VM sizes in both regions. Defaults are `Standard_D2_v3` in West Europe and `Standard_D2s_v5` in North Europe; verify availability and quota in your subscription before planning.
 - An existing Azure Storage account and blob container for remote Terraform state. This project intentionally does not create its own state backend.
 
 The AzureRM provider is constrained to `>= 4.2, < 5.0`. Terraform may generate `.terraform.lock.hcl` on initialization; keep that lock file under version control so subsequent runs use the same provider build.
@@ -56,7 +58,7 @@ Copy-Item .\terraform.tfvars.example .\terraform.tfvars
 notepad .\terraform.tfvars
 ```
 
-Set `subscription_id` and `customer_name`. The optional network switches default to `false`; set either one or both to `true` to create the corresponding VNet and peering. Do not add passwords to `terraform.tfvars`.
+Set `subscription_id` and `customer_name`. The optional network switches default to `false`; set either one or both to `true` to create the corresponding VNet and peering. `linux_vm_size` and `linux_vm_admin_username` can also be adjusted. Do not add passwords to `terraform.tfvars`.
 
 For an interactive PowerShell session, enter two distinct passwords as secure input:
 
@@ -66,15 +68,20 @@ $env:TF_VAR_vm_admin_password = [System.Net.NetworkCredential]::new('', $secureV
 
 $secureDsrmPassword = Read-Host 'Separate DSRM password' -AsSecureString
 $env:TF_VAR_dsrm_password = [System.Net.NetworkCredential]::new('', $secureDsrmPassword).Password
+
+$secureLinuxPassword = Read-Host 'Ubuntu SSH/xrdp password' -AsSecureString
+$env:TF_VAR_linux_vm_admin_password = [System.Net.NetworkCredential]::new('', $secureLinuxPassword).Password
 ```
 
 Both passwords must be at least 12 characters. For automation, use the pipeline's secret store or an approved secret manager to provide the `TF_VAR_*` variables. Clear the session variables after use:
 
 ```powershell
-Remove-Item Env:TF_VAR_vm_admin_password, Env:TF_VAR_dsrm_password -ErrorAction SilentlyContinue
+Remove-Item Env:TF_VAR_vm_admin_password, Env:TF_VAR_dsrm_password, Env:TF_VAR_linux_vm_admin_password -ErrorAction SilentlyContinue
 ```
 
-**Protect Terraform state.** The AD DS extension's protected settings contain the bootstrap command and DSRM secret, so Terraform state and saved plan files can contain sensitive data. `sensitive = true` masks normal CLI output; it does not remove values from state. Use remote Azure Blob state, Entra ID authentication, narrowly scoped Azure RBAC, storage encryption and versioning. Never commit `terraform.tfvars`, backend configuration, state files or saved plans.
+All three passwords must be at least 12 characters. The Linux username is used for SSH and the XFCE/xrdp desktop login. For automation, use the pipeline's secret store or an approved secret manager to provide the `TF_VAR_*` variables.
+
+**Protect Terraform state.** The Windows and Linux VM administrator passwords, DSRM secret and AD DS extension's protected settings are stored in Terraform state and saved plan files. `sensitive = true` masks normal CLI output; it does not remove values from state. Use remote Azure Blob state, Entra ID authentication, narrowly scoped Azure RBAC, storage encryption and versioning. Never commit `terraform.tfvars`, backend configuration, state files or saved plans.
 
 ## 5. Configure remote state
 
@@ -134,7 +141,7 @@ Only after reviewing the complete saved plan, deploy that exact plan:
 terraform apply demo.tfplan
 ```
 
-Terraform prompts for the two sensitive passwords if they were not supplied in environment variables. No resources are created by `terraform init`, `terraform validate`, or `terraform plan`; `terraform apply` is the deployment step.
+Terraform prompts for the three sensitive passwords if they were not supplied in environment variables. No resources are created by `terraform init`, `terraform validate`, or `terraform plan`; `terraform apply` is the deployment step.
 
 When deployment completes, inspect the outputs:
 
@@ -143,7 +150,30 @@ terraform output
 terraform output -json
 ```
 
-The domain controller has no public IP; connect through Bastion. AD DS setup and the VM restart can take several minutes. The NFS volumes use delegated subnets, but this configuration does not mount them on a client VM or configure the full client routing, export policy, DNS, or SMB/ANF Active Directory integration.
+The domain controller and Ubuntu client have no public IP. AD DS setup and VM restarts can take several minutes. The North Europe volume is mounted from the Ubuntu client; the West Europe volume is not mounted. The configuration does not mount SMB or configure ANF Active Directory integration.
+
+## Connect to the Ubuntu desktop
+
+After apply completes, open an Azure CLI session for the same subscription and start a Bastion tunnel to the Linux VM's RDP port:
+
+```powershell
+az login
+az account set --subscription "<subscription-id>"
+az extension add --name bastion
+$linuxVmId = az vm show --resource-group "<customer>-Demo-ANF-Spoke" --name "UbuntuNfs01" --query id --output tsv
+az network bastion tunnel --name "BastionHost" --resource-group "<customer>-Demo-ANF-Hub" --target-resource-id $linuxVmId --resource-port 3389 --port 53389
+```
+
+Leave the tunnel running and connect an RDP client to `localhost:53389` using `linux_vm_admin_username` and the Linux password. For shell access, use Bastion SSH to port 22. Bastion Standard tunneling costs more than Basic; review pricing before applying.
+
+Verify the NFS mount from an Ubuntu shell:
+
+```bash
+findmnt /mnt/anf-demo
+df -h /mnt/anf-demo
+```
+
+The extension uses the ANF mount-target IP from the Terraform resource, mounts NFSv3 over TCP and adds an idempotent `/etc/fstab` entry using `_netdev,nofail`.
 
 ## Optional networks
 

@@ -79,6 +79,11 @@ locals {
             address_prefix = "10.3.5.0/24"
             netapp         = true
           }
+          linux_client = {
+            name           = "LinuxClientSubnet"
+            address_prefix = "10.3.1.0/24"
+            netapp         = false
+          }
         }
       }
     },
@@ -143,6 +148,49 @@ locals {
       }
     }
   ]...)
+
+  linux_client_security_rules = {
+    allow_bastion_rdp = {
+      name                   = "AllowBastionRdp"
+      priority               = 100
+      protocol               = "Tcp"
+      source_address_prefix  = "10.2.2.0/26"
+      destination_port_ranges = ["3389"]
+      access                 = "Allow"
+    }
+    allow_bastion_ssh = {
+      name                   = "AllowBastionSsh"
+      priority               = 110
+      protocol               = "Tcp"
+      source_address_prefix  = "10.2.2.0/26"
+      destination_port_ranges = ["22"]
+      access                 = "Allow"
+    }
+    allow_anf_nfs_tcp = {
+      name                   = "AllowAnfNfsTcp"
+      priority               = 120
+      protocol               = "Tcp"
+      source_address_prefix  = "10.3.5.0/24"
+      destination_port_ranges = ["111", "635", "2049", "4045", "4046"]
+      access                 = "Allow"
+    }
+    allow_anf_nfs_udp = {
+      name                   = "AllowAnfNfsUdp"
+      priority               = 130
+      protocol               = "Udp"
+      source_address_prefix  = "10.3.5.0/24"
+      destination_port_ranges = ["111", "635", "2049", "4045", "4046"]
+      access                 = "Allow"
+    }
+    deny_other_vnet_inbound = {
+      name                   = "DenyOtherVnetInbound"
+      priority               = 200
+      protocol               = "*"
+      source_address_prefix  = "VirtualNetwork"
+      destination_port_ranges = ["*"]
+      access                 = "Deny"
+    }
+  }
 }
 
 resource "azurerm_resource_group" "this" {
@@ -201,7 +249,8 @@ resource "azurerm_bastion_host" "hub" {
   name                = "BastionHost"
   location            = azurerm_resource_group.this["hub"].location
   resource_group_name = azurerm_resource_group.this["hub"].name
-  sku                 = "Basic"
+  sku                 = "Standard"
+  tunneling_enabled   = true
   tags                = local.common_tags
 
   ip_configuration {
@@ -209,6 +258,29 @@ resource "azurerm_bastion_host" "hub" {
     subnet_id            = azurerm_subnet.this["hub.bastion"].id
     public_ip_address_id = azurerm_public_ip.bastion.id
   }
+}
+
+resource "azurerm_network_security_group" "linux_client" {
+  name                = "LinuxClientNsg"
+  location            = azurerm_resource_group.this["spoke"].location
+  resource_group_name = azurerm_resource_group.this["spoke"].name
+  tags                = local.common_tags
+}
+
+resource "azurerm_network_security_rule" "linux_client" {
+  for_each = local.linux_client_security_rules
+
+  name                        = each.value.name
+  resource_group_name         = azurerm_resource_group.this["spoke"].name
+  network_security_group_name = azurerm_network_security_group.linux_client.name
+  priority                    = each.value.priority
+  direction                   = "Inbound"
+  access                      = each.value.access
+  protocol                    = each.value.protocol
+  source_port_range           = "*"
+  destination_port_ranges     = each.value.destination_port_ranges
+  source_address_prefix       = each.value.source_address_prefix
+  destination_address_prefix  = "*"
 }
 
 resource "azurerm_virtual_network_peering" "this" {

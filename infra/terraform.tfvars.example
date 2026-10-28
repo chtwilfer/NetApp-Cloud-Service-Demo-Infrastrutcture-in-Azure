@@ -8,6 +8,8 @@ deploy_ontap_network = false
 deploy_gfc_network   = false
 
 vm_admin_username = "demoadmin"
+linux_vm_size = "Standard_D2s_v5"
+linux_vm_admin_username = "demouser"
 
-# Provide vm_admin_password and dsrm_password through secure TF_VAR_* environment variables.
+# Provide passwords through secure TF_VAR_* environment variables.
 # Do not put credentials in this file or commit a populated terraform.tfvars file.

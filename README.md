@@ -68,9 +68,9 @@ df -h /mnt/anf-demo
 
 The mount is persistent across reboots. The configuration mounts the North Europe NFSv3 volume only; it does not mount the West Europe volume.
 
-## Terraform status
+## Terraform
 
-The [`infra/`](infra/README.md) folder still represents the previous v2 design: it uses the Windows Server 2019 image and does not include the Ubuntu desktop/NFS client. **Do not use that Terraform folder to deploy the v3 design yet.** The Terraform conversion is the next step after v3 is reviewed and tested; it will then be updated to match v3.
+The [`infra/`](infra/README.md) folder now represents the v3 design, including Windows Server 2025, the Ubuntu desktop/NFS client, Bastion Standard tunneling and the ANF export policy. Follow its instructions for remote state, sensitive variables, validation, plan review and deployment. The Terraform configuration is separate from the PowerShell scripts; do not deploy both against the same resource groups unless resources have been deliberately imported into state.
 
 ## Cleanup
 

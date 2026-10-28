@@ -1,0 +1,24 @@
+#!/usr/bin/env bash
+set -euo pipefail
+export DEBIAN_FRONTEND=noninteractive
+
+LINUX_USERNAME='${linux_username}'
+ANF_MOUNT_TARGET='${anf_mount_target}'
+ANF_VOLUME_PATH='${anf_volume_path}'
+MOUNT_PATH='${mount_path}'
+
+apt-get update
+apt-get install -y xfce4 xfce4-goodies xrdp nfs-common
+printf '%s\n' 'startxfce4' > "/home/$${LINUX_USERNAME}/.xsession"
+chown "$${LINUX_USERNAME}:$${LINUX_USERNAME}" "/home/$${LINUX_USERNAME}/.xsession"
+adduser xrdp ssl-cert
+systemctl enable --now xrdp
+
+mkdir -p "$${MOUNT_PATH}"
+mount -t nfs -o rw,hard,noatime,nolock,rsize=65536,wsize=65536,vers=3,tcp "$${ANF_MOUNT_TARGET}:/$${ANF_VOLUME_PATH}" "$${MOUNT_PATH}"
+mountpoint -q "$${MOUNT_PATH}"
+
+FSTAB_ENTRY="$${ANF_MOUNT_TARGET}:/$${ANF_VOLUME_PATH} $${MOUNT_PATH} nfs bg,rw,hard,noatime,nolock,rsize=65536,wsize=65536,vers=3,tcp,_netdev,nofail 0 0"
+if ! grep -Fqx "$${FSTAB_ENTRY}" /etc/fstab; then
+    printf '%s\n' "$${FSTAB_ENTRY}" >> /etc/fstab
+fi
